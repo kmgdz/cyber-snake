@@ -2,20 +2,31 @@
 <html lang="en">
 <head>
 <script>
+  // Prevent Zerion extension error from showing up in AI Studio overlay
   window.addEventListener('error', function(e) {
     if (e.message && e.message.includes('isZerion')) {
-      e.preventDefault();
       e.stopImmediatePropagation();
     }
   }, true);
-  window.onerror = function(msg) {
-    if (msg && msg.toString().includes('isZerion')) return true;
-  };
+  window.addEventListener('unhandledrejection', function(e) {
+    if (e.reason && e.reason.message && e.reason.message.includes('isZerion')) {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+    }
+  }, true);
+  try {
+    Object.defineProperty(window, 'isZerion', {
+      value: false,
+      writable: true,
+      configurable: true,
+      enumerable: true
+    });
+  } catch (e) {}
 </script>
 <meta name="x-ogp-key" content="e0b78b21-e933-45a4-8840-0030a939afdc" id="ogp-key-meta" />
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>CYBER SNAKE: NEON EDITION 🐉</title>
+<title>CYBER SNAKE: AUDIO EDITION 🔊</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Russo+One&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -36,6 +47,7 @@ body{
 }
 
 /* Matrix rain canvas (background) */
+#bgImage{position:fixed;inset:0;opacity:0.3;pointer-events:none;z-index:0;background-image:url('/src/assets/images/cyber_background_1781103236151.png');background-size:cover;background-position:center;box-shadow:inset 0 0 100px rgba(0, 13, 0, 0.9);}
 #bgCanvas{position:fixed;inset:0;opacity:0.18;pointer-events:none;z-index:0;}
 #gameCanvas{position:fixed;inset:0;z-index:1;}
 
@@ -96,17 +108,17 @@ body{
 .screen{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,8,0,0.96);}
 .screen.hidden{display:none;}
 
-.logo{
-  font-size:clamp(50px,11vw,100px);letter-spacing:8px;line-height:0.95;text-align:center;
-  animation:logoglitch 3s infinite;
+.logo-img{
+  max-width: 90%;
+  max-height: 40vh;
+  object-fit: contain;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 0 15px rgba(0,255,65,0.4));
+  animation: logopulse 3s infinite alternate;
 }
-.logo .cy{color:var(--cyan);text-shadow:0 0 30px var(--cyan),0 0 60px rgba(0,245,255,0.3);}
-.logo .gn{color:var(--green);text-shadow:0 0 30px var(--green),0 0 60px rgba(0,255,65,0.3);}
-@keyframes logoglitch{
-  0%,92%,100%{transform:none;filter:none;}
-  93%{transform:translate(3px,-1px);filter:hue-rotate(90deg);}
-  95%{transform:translate(-2px,1px);filter:hue-rotate(-90deg);}
-  97%{transform:translate(1px,2px);filter:none;}
+@keyframes logopulse{
+  0%{filter:drop-shadow(0 0 10px rgba(0,255,65,0.3));}
+  100%{filter:drop-shadow(0 0 25px rgba(0,255,65,0.6));}
 }
 
 .tagline{font-family:'Share Tech Mono',monospace;color:rgba(0,255,65,0.35);letter-spacing:5px;font-size:clamp(10px,1.8vw,13px);margin-top:10px;text-align:center;}
@@ -156,6 +168,7 @@ body{
 </style>
 </head>
 <body>
+<div id="bgImage"></div>
 <canvas id="bgCanvas"></canvas>
 <canvas id="gameCanvas"></canvas>
 <div class="scan"></div>
@@ -184,7 +197,7 @@ body{
 
 <!-- Start Screen -->
 <div class="screen" id="sscreen">
-  <div class="logo"><span class="cy">CYBER</span><br><span class="gn">SNAKE</span></div>
+  <img src="/src/assets/images/cyber_snake_logo_1781103276607.png" class="logo-img" alt="Cyber Snake: Audio Edition" />
   <div class="tagline">// DATA_EATER v2.077 //</div>
   <div class="sep"></div>
   <div class="tips">
@@ -213,6 +226,89 @@ body{
 </div>
 
 <script>
+// ── Audio Engine ──
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let audioAllowed = false;
+let droneOsc = null;
+let droneGain = null;
+
+function initDrone() {
+  if(droneOsc) return;
+  droneOsc = audioCtx.createOscillator();
+  droneGain = audioCtx.createGain();
+  droneOsc.type = 'sawtooth';
+  droneOsc.frequency.setValueAtTime(55, audioCtx.currentTime); // Low A
+  droneGain.gain.setValueAtTime(0, audioCtx.currentTime);
+  droneOsc.connect(droneGain);
+  droneGain.connect(audioCtx.destination);
+  droneOsc.start();
+}
+
+function startDrone() {
+  if(!audioAllowed) return;
+  initDrone();
+  droneGain.gain.setTargetAtTime(0.04, audioCtx.currentTime, 2);
+}
+
+function stopDrone() {
+  if(droneGain) {
+    droneGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+  }
+}
+
+function adjustDroneFreq(level) {
+  if(droneOsc) {
+    let targetFreq = 55 + (level * 2);
+    droneOsc.frequency.setTargetAtTime(targetFreq, audioCtx.currentTime, 1);
+  }
+}
+
+function playTone(freq, type, duration, vol=0.1, env='perc') {
+  if (!audioAllowed) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  
+  if (env === 'perc') {
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  } else if (env === 'sweep') {
+    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + (duration*0.2));
+    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
+    osc.frequency.exponentialRampToValueAtTime(freq*2, audioCtx.currentTime + duration);
+  } else {
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0, audioCtx.currentTime + duration);
+  }
+  
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+function playEatSound() { playTone(600, 'sine', 0.15, 0.1); playTone(1200, 'square', 0.1, 0.05); }
+function playPowerSound() { playTone(400, 'square', 0.4, 0.15, 'sweep'); playTone(800, 'sawtooth', 0.4, 0.1); }
+function playDieSound() { stopDrone(); playTone(100, 'sawtooth', 0.8, 0.2); playTone(50, 'square', 1.0, 0.2); }
+function playLevelUpSound() { playTone(440, 'sine', 0.2, 0.1); setTimeout(()=>playTone(554, 'sine', 0.2, 0.1), 100); setTimeout(()=>playTone(659, 'sine', 0.4, 0.15), 200); }
+function playTurnSound() { playTone(800, 'sine', 0.05, 0.02); }
+function playMoveTip() { playTone(300, 'triangle', 0.05, 0.01); }
+
+// Allow audio on first interaction
+function resumeAudio() {
+  if (!audioAllowed) {
+    audioCtx.resume();
+    audioAllowed = true;
+    initDrone();
+  }
+}
+window.addEventListener('click', resumeAudio, { once: true });
+window.addEventListener('keydown', resumeAudio, { once: true });
+
+
 // ── Canvases ──
 const bgCanvas = document.getElementById('bgCanvas');
 const bgCtx = bgCanvas.getContext('2d');
@@ -269,7 +365,10 @@ document.addEventListener('keydown', e => {
   if(DIRS[e.code]){
     const d = DIRS[e.code];
     // Prevent reverse
-    if(snake && !(d.x === -dir.x && d.y === -dir.y)) nextDir = d;
+    if(snake && !(d.x === -dir.x && d.y === -dir.y)) {
+      if(nextDir.x !== d.x || nextDir.y !== d.y) playTurnSound();
+      nextDir = d;
+    }
     e.preventDefault();
   }
   if(e.code==='Space'&&state==='start') startGame();
@@ -285,7 +384,10 @@ document.getElementById('touch-overlay').addEventListener('touchend', e=>{
   let d;
   if(Math.abs(dx)>Math.abs(dy)) d=dx>0?{x:1,y:0}:{x:-1,y:0};
   else d=dy>0?{x:0,y:1}:{x:0,y:-1};
-  if(!(d.x===-dir.x&&d.y===-dir.y)) nextDir=d;
+  if(!(d.x===-dir.x&&d.y===-dir.y)) {
+    if(nextDir.x !== d.x || nextDir.y !== d.y) playTurnSound();
+    nextDir=d;
+  }
 },{passive:true});
 
 // ── Init game ──
@@ -306,6 +408,9 @@ function initGame(){
 }
 
 function startGame(){
+  resumeAudio();
+  startDrone();
+  adjustDroneFreq(1);
   document.getElementById('sscreen').classList.add('hidden');
   document.getElementById('goscreen').classList.add('hidden');
   initGame();
@@ -317,6 +422,7 @@ function startGame(){
 
 function endGame(){
   state = 'dead';
+  playDieSound();
   if(score > best) best = score;
   spawnDeathParticles();
   flashCrash();
@@ -396,6 +502,7 @@ function updateSnake(){
   if(snake.some(s=>s.x===head.x&&s.y===head.y)){ endGame(); return; }
 
   snake.unshift(head);
+  playMoveTip();
 
   // Eat packet
   let ate = false;
@@ -405,6 +512,7 @@ function updateSnake(){
       eaten++; streak++;
       const pts = p.pts * (powerMode?2:1) * Math.min(streak,5);
       score += pts;
+      playEatSound();
       spawnEatParticles(head.x, head.y, p.color);
       packets.splice(i,1);
       spawnPackets(1);
@@ -417,7 +525,7 @@ function updateSnake(){
       document.getElementById('streak-txt').textContent = streak>=5?'MAX STREAK! 🔥':'';
       // Level up
       const newLevel=Math.floor(eaten/8)+1;
-      if(newLevel!==level){ level=newLevel; moveInterval=Math.max(60,140-(level-1)*10); document.getElementById('lvl').textContent=level.toString().padStart(2,'0'); showLvlUp(); }
+      if(newLevel!==level){ level=newLevel; moveInterval=Math.max(60,140-(level-1)*10); document.getElementById('lvl').textContent=level.toString().padStart(2,'0'); playLevelUpSound(); showLvlUp(); adjustDroneFreq(level); }
       document.getElementById('sc').textContent=Math.floor(score);
       document.getElementById('bst').textContent=Math.floor(Math.max(best,score));
       break;
@@ -436,6 +544,7 @@ function updateSnake(){
     if(g.x===head.x&&g.y===head.y){
       score+=250; eaten++;
       powerMode=true; powerTimer=400;
+      playPowerSound();
       spawnEatParticles(head.x,head.y,'#ffe600');
       goldens.splice(i,1);
       setTimeout(()=>spawnGolden(),5000+Math.random()*5000);
