@@ -1,10 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+  window.addEventListener('error', function(e) {
+    if (e.message && e.message.includes('isZerion')) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  }, true);
+  window.onerror = function(msg) {
+    if (msg && msg.toString().includes('isZerion')) return true;
+  };
+</script>
 <meta name="x-ogp-key" content="e0b78b21-e933-45a4-8840-0030a939afdc" id="ogp-key-meta" />
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>CYBER SNAKE — Data Eater</title>
+<title>CYBER SNAKE: NEON EDITION 🐉</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Russo+One&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -423,14 +434,14 @@ function updateSnake(){
   for(let i=goldens.length-1;i>=0;i--){
     const g=goldens[i];
     if(g.x===head.x&&g.y===head.y){
-      score+=150; eaten++;
-      powerMode=true; powerTimer=300;
+      score+=250; eaten++;
+      powerMode=true; powerTimer=400;
       spawnEatParticles(head.x,head.y,'#ffe600');
       goldens.splice(i,1);
       setTimeout(()=>spawnGolden(),5000+Math.random()*5000);
       document.getElementById('sc').textContent=Math.floor(score);
       document.getElementById('bst').textContent=Math.floor(Math.max(best,score));
-      document.getElementById('combo-txt').textContent='POWER MODE! +150 ⚡';
+      document.getElementById('combo-txt').textContent='NEON OVERDRIVE! +250 🚀';
       break;
     }
   }
