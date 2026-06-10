@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta name="x-ogp-key" content="e0b78b21-e933-45a4-8840-0030a939afdc" id="ogp-key-meta" />
 <script>
   // Prevent Zerion extension error from showing up in AI Studio overlay
   window.addEventListener('error', function(e) {
@@ -23,7 +24,6 @@
     });
   } catch (e) {}
 </script>
-<meta name="x-ogp-key" content="e0b78b21-e933-45a4-8840-0030a939afdc" id="ogp-key-meta" />
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>CYBER SNAKE: AUDIO EDITION 🔊</title>
@@ -211,6 +211,7 @@ body{
 
 <!-- Game Over -->
 <div class="screen hidden" id="goscreen">
+  <img src="/src/assets/images/game_over_cyber_1781103860772.png" style="max-height: 25vh; margin-bottom: 20px; filter: drop-shadow(0 0 15px rgba(255,0,60,0.5));" alt="Game Over" />
   <div id="gotitle">CONNECTION LOST</div>
   <div class="sep"></div>
   <div id="fscore">0</div>
@@ -296,6 +297,7 @@ function playDieSound() { stopDrone(); playTone(100, 'sawtooth', 0.8, 0.2); play
 function playLevelUpSound() { playTone(440, 'sine', 0.2, 0.1); setTimeout(()=>playTone(554, 'sine', 0.2, 0.1), 100); setTimeout(()=>playTone(659, 'sine', 0.4, 0.15), 200); }
 function playTurnSound() { playTone(800, 'sine', 0.05, 0.02); }
 function playMoveTip() { playTone(300, 'triangle', 0.05, 0.01); }
+function playGoldenSpawnSound() { playTone(880, 'sine', 0.1, 0.2, 'sweep'); playTone(1200, 'sine', 0.2, 0.1, 'perc'); }
 
 // Allow audio on first interaction
 function resumeAudio() {
@@ -462,6 +464,7 @@ function spawnPackets(n=1){
 function spawnGolden(){
   const cell = randCell();
   goldens.push({...cell, pulse:0, life:600, maxLife:600});
+  playGoldenSpawnSound();
 }
 
 // ── Particles ──
