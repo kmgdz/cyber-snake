@@ -3,6 +3,27 @@
 <head>
 <meta name="x-ogp-key" content="e0b78b21-e933-45a4-8840-0030a939afdc" id="ogp-key-meta" />
 <script>
+  // play.fun ownership & gameId initialization
+  (function() {
+    var GAME_ID = (new URLSearchParams(window.location.search)).get('gameId')
+                 || 'b959331e-be4a-445a-9969-a8f4fd968fef';
+    window.__gameId = GAME_ID;
+
+    function tryInit() {
+      if (window.__ogp && typeof window.__ogp.init === 'function') {
+        window.__ogp.init({ gameId: GAME_ID });
+      } else if (window.OGP && typeof window.OGP.init === 'function') {
+        window.OGP.init({ gameId: GAME_ID });
+      }
+    }
+
+    // Try immediately, then again after DOM ready, then after full load
+    tryInit();
+    document.addEventListener('DOMContentLoaded', tryInit);
+    window.addEventListener('load', tryInit);
+  })();
+</script>
+<script>
   // Prevent Zerion extension error from showing up in AI Studio overlay
   window.addEventListener('error', function(e) {
     if (e.message && e.message.includes('isZerion')) {
